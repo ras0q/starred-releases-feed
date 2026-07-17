@@ -1,0 +1,47 @@
+name: Starred Releases Feed
+description: Scan starred GitHub repositories and publish a daily Atom feed with release links.
+
+inputs:
+  token:
+    description: GitHub PAT with permission to read starred repositories and releases.
+    required: true
+  state-path:
+    description: Path to the scan and feed state file, relative to the calling repository root.
+    default: state.json
+    required: false
+  feed-path:
+    description: Path for the generated Atom feed, relative to the calling repository root.
+    default: feed.atom
+    required: false
+  feed-url:
+    description: Public URL of the Atom feed for self/alternate links.
+    default: https://example.github.io/feed.atom
+    required: false
+  max-runtime-minutes:
+    description: Stop scanning after this many minutes and resume on the next run.
+    default: "10"
+    required: false
+  min-remaining-points:
+    description: Stop scanning when GraphQL rate-limit remaining points fall to this value or below.
+    default: "100"
+    required: false
+  include-prereleases:
+    description: Include prerelease versions in the feed.
+    default: "false"
+    required: false
+  include-drafts:
+    description: Include draft releases in the feed.
+    default: "false"
+    required: false
+
+outputs:
+  stopped-because:
+    description: Why scanning stopped (complete, time, or rate-limit).
+  release-count:
+    description: Number of release records merged during this run.
+  sealed-days:
+    description: Total number of sealed UTC day buckets in state.
+
+runs:
+  using: node24
+  main: dist/main.mjs

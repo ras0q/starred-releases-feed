@@ -1,0 +1,19 @@
+{
+  "imports": {
+    "@actions/core": "npm:@actions/core@1.11.1",
+    "@octokit/graphql": "npm:@octokit/graphql@9.0.3",
+    "@std/assert": "jsr:@std/assert@1"
+  },
+  "tasks": {
+    "build:action": "deno bundle --minify action-src/main.ts -o dist/main.mjs",
+    "fix": "deno fmt && deno lint && deno check cli.ts main.ts main_test.ts action-src/main.ts action-src/main_test.ts src/config.ts src/state.ts src/atom.ts src/scan.ts src/github/graphql.ts",
+    "sync": "deno run -R=./state.json,./feed.atom -W=./state.json,./feed.atom cli.ts",
+    "test": "deno test -RWNE"
+  },
+  "fmt": {
+    "exclude": ["dist/", "tmp/"]
+  },
+  "lint": {
+    "exclude": ["dist/", "tmp/"]
+  }
+}

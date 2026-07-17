@@ -1,0 +1,5 @@
+#!/bin/sh -eux
+
+cd "$(git rev-parse --show-toplevel)"
+deno task fix
+deno task build:action
