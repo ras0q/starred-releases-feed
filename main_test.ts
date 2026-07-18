@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
-import { renderAtom } from "./src/atom.ts";
+import { groupReleasesByRepo, renderAtom } from "./src/atom.ts";
 import { loadConfig } from "./src/config.ts";
 import { splitRepo } from "./src/github/graphql.ts";
 import { syncStarredReleases } from "./main.ts";
@@ -101,7 +101,58 @@ Deno.test("renderAtom emits one entry per sealed day", () => {
     atom.includes("tag:github.com,2008:starred-releases:2026-07-17"),
     true,
   );
-  assertEquals(atom.includes("denoland/deno@v2.0.0"), true);
+  assertEquals(atom.includes("denoland/deno"), true);
+  assertEquals(atom.includes("v2.0.0"), true);
+});
+
+Deno.test("formatDayContent groups releases under each repository", () => {
+  const state = emptyState();
+  state.feed.sealedDates = ["2026-07-17"];
+  state.feed.days["2026-07-17"] = [
+    {
+      id: "two",
+      owner: "yamcodes",
+      repo: "arkenv",
+      tag: "@arkenv/nuxt@0.0.6",
+      url: "https://github.com/yamcodes/arkenv/releases/tag/@arkenv/nuxt@0.0.6",
+      publishedAt: "2026-07-17T10:00:00.000Z",
+    },
+    {
+      id: "one",
+      owner: "denoland",
+      repo: "deno",
+      tag: "v2.0.0",
+      url: "https://github.com/denoland/deno/releases/tag/v2.0.0",
+      publishedAt: "2026-07-17T09:00:00.000Z",
+    },
+    {
+      id: "three",
+      owner: "denoland",
+      repo: "deno",
+      tag: "v2.0.1",
+      url: "https://github.com/denoland/deno/releases/tag/v2.0.1",
+      publishedAt: "2026-07-17T11:00:00.000Z",
+    },
+  ];
+
+  const atom = renderAtom(state, {
+    feedUrl: "https://example.test/starred-releases.atom",
+    title: "Starred repository releases",
+    subtitle: "Daily releases",
+    retentionDays: 7,
+    updatedAt: new Date("2026-07-18T00:00:00.000Z"),
+  });
+
+  assertEquals(
+    groupReleasesByRepo(state.feed.days["2026-07-17"]).map((group) =>
+      group.key
+    ),
+    ["denoland/deno", "yamcodes/arkenv"],
+  );
+  assertEquals(atom.includes("denoland/deno"), true);
+  assertEquals(atom.includes("v2.0.1"), true);
+  assertEquals(atom.includes("@arkenv/nuxt@0.0.6"), true);
+  assertEquals(atom.includes("denoland/deno@v2.0.0"), false);
 });
 
 Deno.test("runScan checkpoints starred pagination and resumes phase 2", async () => {
@@ -331,7 +382,8 @@ Deno.test("syncStarredReleases writes atom and state when persisting", async () 
   const state = await loadState(config.statePath);
   assertEquals(state.feed.sealedDates.includes("2026-07-17"), true);
   const atom = await Deno.readTextFile(config.feedPath);
-  assertEquals(atom.includes("denoland/deno@v2.0.0"), true);
+  assertEquals(atom.includes("denoland/deno"), true);
+  assertEquals(atom.includes("v2.0.0"), true);
 });
 
 Deno.test("state rejects malformed cache data", async () => {

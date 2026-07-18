@@ -18,17 +18,62 @@ function formatDayTitle(date: string): string {
   return date;
 }
 
+function repoKey(release: ReleaseRecord): string {
+  return `${release.owner}/${release.repo}`;
+}
+
+function repoUrl(release: ReleaseRecord): string {
+  return `https://github.com/${release.owner}/${release.repo}`;
+}
+
+function compareReleases(a: ReleaseRecord, b: ReleaseRecord): number {
+  const byTime = Date.parse(b.publishedAt) - Date.parse(a.publishedAt);
+  if (byTime !== 0) return byTime;
+  return a.tag.localeCompare(b.tag);
+}
+
+/**
+ * Groups releases by repository while preserving a stable repo and tag order.
+ */
+export function groupReleasesByRepo(
+  releases: ReleaseRecord[],
+): Array<{ key: string; releases: ReleaseRecord[] }> {
+  const groups = new Map<string, ReleaseRecord[]>();
+
+  for (const release of releases) {
+    const key = repoKey(release);
+    const bucket = groups.get(key) ?? [];
+    bucket.push(release);
+    groups.set(key, bucket);
+  }
+
+  return [...groups.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, bucket]) => ({
+      key,
+      releases: bucket.sort(compareReleases),
+    }));
+}
+
 function formatDayContent(releases: ReleaseRecord[]): string {
   if (releases.length === 0) {
     return "<p>No starred repository releases on this day.</p>";
   }
 
-  const items = releases.map((release) => {
-    const label = `${release.owner}/${release.repo}@${release.tag}`;
-    return `<li><a href="${escapeXml(release.url)}">${
-      escapeXml(label)
-    }</a></li>`;
-  }).join("");
+  const items = groupReleasesByRepo(releases).map(
+    ({ key, releases: repoReleases }) => {
+      const first = repoReleases[0];
+      const releaseItems = repoReleases.map((release) =>
+        `<li><a href="${escapeXml(release.url)}">${
+          escapeXml(release.tag)
+        }</a></li>`
+      ).join("");
+
+      return `<li><a href="${escapeXml(repoUrl(first))}">${
+        escapeXml(key)
+      }</a><ul>${releaseItems}</ul></li>`;
+    },
+  ).join("");
 
   return `<ul>${items}</ul>`;
 }

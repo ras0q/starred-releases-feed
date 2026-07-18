@@ -5,10 +5,10 @@ starred on GitHub, aggregates their releases by UTC day, and publishes a thin
 Atom feed. The TypeScript source is bundled with Deno; callers run only the
 committed Node 24 ESM bundle.
 
-Each feed item covers one sealed UTC day and lists `owner/repo@tag` links. Draft
-and prerelease versions are excluded by default. The Action can stop early when
-a runtime or GraphQL rate-limit threshold is reached and resume on the next
-scheduled run.
+Each feed item covers one sealed UTC day with a nested list of repositories and
+their release tags. Draft and prerelease versions are excluded by default. The
+Action can stop early when a runtime or GraphQL rate-limit threshold is reached
+and resume on the next scheduled run.
 
 ## Private repository setup
 
