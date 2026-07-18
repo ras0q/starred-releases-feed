@@ -3,6 +3,10 @@ export type Config = {
   statePath: string;
   feedPath: string;
   feedUrl: string;
+  htmlPath: string;
+  htmlUrl: string;
+  authorName: string;
+  authorUri?: string;
   maxRuntimeMinutes: number;
   minRemainingPoints: number;
   overlapMs: number;
@@ -35,6 +39,10 @@ function parsePositiveInt(
   return parsed;
 }
 
+function defaultHtmlUrl(feedUrl: string): string {
+  return feedUrl.replace(/\.atom$/, ".html");
+}
+
 /**
  * Loads runtime configuration from environment variables and optional overrides.
  */
@@ -48,12 +56,18 @@ export function loadConfig(
     throw new Error("GITHUB_TOKEN (or GH_TOKEN) is required");
   }
 
+  const feedUrl = overrides.feedUrl ?? env.FEED_URL ??
+    "https://example.github.io/starred-releases.atom";
+
   return {
     token,
     statePath: overrides.statePath ?? env.STATE_PATH ?? "state.json",
     feedPath: overrides.feedPath ?? env.FEED_PATH ?? "starred-releases.atom",
-    feedUrl: overrides.feedUrl ?? env.FEED_URL ??
-      "https://example.github.io/starred-releases.atom",
+    feedUrl,
+    htmlPath: overrides.htmlPath ?? env.HTML_PATH ?? "starred-releases.html",
+    htmlUrl: overrides.htmlUrl ?? env.HTML_URL ?? defaultHtmlUrl(feedUrl),
+    authorName: overrides.authorName ?? env.AUTHOR_NAME ?? "ras0q",
+    authorUri: overrides.authorUri ?? env.AUTHOR_URI,
     maxRuntimeMinutes: overrides.maxRuntimeMinutes ??
       parsePositiveInt(env.MAX_RUNTIME_MINUTES, DEFAULTS.maxRuntimeMinutes),
     minRemainingPoints: overrides.minRemainingPoints ??

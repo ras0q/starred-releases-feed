@@ -6,9 +6,11 @@ Atom feed. The TypeScript source is bundled with Deno; callers run only the
 committed Node 24 ESM bundle.
 
 Each feed item covers one sealed UTC day with a nested list of repositories and
-their release tags. Draft and prerelease versions are excluded by default. The
-Action can stop early when a runtime or GraphQL rate-limit threshold is reached
-and resume on the next scheduled run.
+their release tags. Entry titles and repository headings include release counts.
+The Action also publishes a companion HTML page with the same sealed days, run
+status, and anchor links referenced from the Atom feed. Draft and prerelease
+versions are excluded by default. The Action can stop early when a runtime or
+GraphQL rate-limit threshold is reached and resume on the next scheduled run.
 
 ## Private repository setup
 
@@ -52,6 +54,10 @@ jobs:
           state-path: pages/state.json
           feed-path: pages/starred-releases.atom
           feed-url: https://<username>.github.io/starred-releases.atom
+          html-path: pages/starred-releases.html
+          html-url: https://<username>.github.io/starred-releases.html
+          author-name: <username>
+          author-uri: https://github.com/<username>
           max-runtime-minutes: 10
           min-remaining-points: 100
 
@@ -60,7 +66,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add starred-releases.atom state.json
+          git add starred-releases.atom starred-releases.html state.json
           git diff --staged --quiet || git commit -m "Update starred releases feed"
           git push origin gh-pages
 ```
@@ -85,6 +91,10 @@ git push origin gh-pages
 | `state-path`           | `state.json`            | Scan and feed state file                    |
 | `feed-path`            | `starred-releases.atom` | Generated Atom feed path                    |
 | `feed-url`             | example URL             | Public feed URL for Atom links              |
+| `html-path`            | `starred-releases.html` | Generated HTML page path                    |
+| `html-url`             | derived from `feed-url` | Public HTML URL linked from Atom entries    |
+| `author-name`          | `ras0q`                 | Author name in the Atom feed                |
+| `author-uri`           | unset                   | Author URI in the Atom feed                 |
 | `max-runtime-minutes`  | `10`                    | Stop scanning after this many minutes       |
 | `min-remaining-points` | `100`                   | Stop when GraphQL points fall to this level |
 | `include-prereleases`  | `false`                 | Include prerelease versions                 |

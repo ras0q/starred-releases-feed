@@ -33,6 +33,9 @@ releases. Optional environment variables:
 - `STATE_PATH` (default: `state.json`)
 - `FEED_PATH` (default: `starred-releases.atom`)
 - `FEED_URL` (public feed URL used in Atom links)
+- `HTML_PATH` (default: `starred-releases.html`)
+- `HTML_URL` (public HTML URL; defaults to `FEED_URL` with `.html`)
+- `AUTHOR_NAME` / `AUTHOR_URI`
 - `MAX_RUNTIME_MINUTES` (default: `10`)
 - `MIN_REMAINING_POINTS` (default: `100`)
 - `INCLUDE_PRERELEASES` / `INCLUDE_DRAFTS` (`true` or `false`)

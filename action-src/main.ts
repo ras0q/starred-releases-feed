@@ -40,12 +40,21 @@ if (import.meta.main) {
       core.getInput("feed-path"),
       "feed-path",
     );
+    const htmlPath = callerPath(
+      workspace,
+      core.getInput("html-path"),
+      "html-path",
+    );
 
     const config = loadConfig({
       token: core.getInput("token", { required: true }),
       statePath,
       feedPath,
       feedUrl: core.getInput("feed-url"),
+      htmlPath,
+      htmlUrl: core.getInput("html-url"),
+      authorName: core.getInput("author-name"),
+      authorUri: core.getInput("author-uri") || undefined,
       maxRuntimeMinutes: parsePositiveInt(core.getInput("max-runtime-minutes")),
       minRemainingPoints: parsePositiveInt(
         core.getInput("min-remaining-points"),
@@ -56,6 +65,7 @@ if (import.meta.main) {
 
     await mkdir(path.dirname(statePath), { recursive: true });
     await mkdir(path.dirname(feedPath), { recursive: true });
+    await mkdir(path.dirname(htmlPath), { recursive: true });
 
     const result = await syncStarredReleases(config);
 

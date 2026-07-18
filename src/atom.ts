@@ -1,81 +1,31 @@
-import type { AppState, ReleaseRecord } from "./state.ts";
+import {
+  dayAnchor,
+  escapeHtml,
+  formatEntryTitle,
+  renderDayBodyHtml,
+} from "./feed-content.ts";
+import type { AppState } from "./state.ts";
 import { sealedFeedDays } from "./state.ts";
 
 function escapeXml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
+  return escapeHtml(value).replaceAll("&#39;", "&apos;");
 }
 
 function entryId(date: string): string {
   return `tag:github.com,2008:starred-releases:${date}`;
 }
 
-function formatDayTitle(date: string): string {
-  return date;
-}
-
-function repoKey(release: ReleaseRecord): string {
-  return `${release.owner}/${release.repo}`;
-}
-
-function repoUrl(release: ReleaseRecord): string {
-  return `https://github.com/${release.owner}/${release.repo}`;
-}
-
-function compareReleases(a: ReleaseRecord, b: ReleaseRecord): number {
-  const byTime = Date.parse(b.publishedAt) - Date.parse(a.publishedAt);
-  if (byTime !== 0) return byTime;
-  return a.tag.localeCompare(b.tag);
-}
-
-/**
- * Groups releases by repository while preserving a stable repo and tag order.
- */
-export function groupReleasesByRepo(
-  releases: ReleaseRecord[],
-): Array<{ key: string; releases: ReleaseRecord[] }> {
-  const groups = new Map<string, ReleaseRecord[]>();
-
-  for (const release of releases) {
-    const key = repoKey(release);
-    const bucket = groups.get(key) ?? [];
-    bucket.push(release);
-    groups.set(key, bucket);
-  }
-
-  return [...groups.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([key, bucket]) => ({
-      key,
-      releases: bucket.sort(compareReleases),
-    }));
-}
-
-function formatDayContent(releases: ReleaseRecord[]): string {
-  if (releases.length === 0) {
-    return "<p>No starred repository releases on this day.</p>";
-  }
-
-  const items = groupReleasesByRepo(releases).map(
-    ({ key, releases: repoReleases }) => {
-      const first = repoReleases[0];
-      const releaseItems = repoReleases.map((release) =>
-        `<li><a href="${escapeXml(release.url)}">${
-          escapeXml(release.tag)
-        }</a></li>`
-      ).join("");
-
-      return `<li><a href="${escapeXml(repoUrl(first))}">${
-        escapeXml(key)
-      }</a><ul>${releaseItems}</ul></li>`;
-    },
-  ).join("");
-
-  return `<ul>${items}</ul>`;
+function renderAuthor(name: string, uri?: string): string {
+  return uri
+    ? `
+  <author>
+    <name>${escapeXml(name)}</name>
+    <uri>${escapeXml(uri)}</uri>
+  </author>`
+    : `
+  <author>
+    <name>${escapeXml(name)}</name>
+  </author>`;
 }
 
 /**
@@ -85,8 +35,11 @@ export function renderAtom(
   state: AppState,
   options: {
     feedUrl: string;
+    htmlUrl: string;
     title: string;
     subtitle: string;
+    authorName: string;
+    authorUri?: string;
     retentionDays: number;
     updatedAt?: Date;
   },
@@ -102,16 +55,17 @@ export function renderAtom(
     const releases = state.feed.days[date] ?? [];
     const dayUpdated = releases[0]?.publishedAt ??
       `${date}T23:59:59.000Z`;
+    const htmlLink = `${options.htmlUrl}#${dayAnchor(date)}`;
     return `
   <entry>
-    <title>${escapeXml(formatDayTitle(date))}</title>
-    <link href="${escapeXml(options.feedUrl)}#${
-      escapeXml(date)
-    }" rel="alternate" type="text/html"/>
+    <title>${escapeXml(formatEntryTitle(date, releases))}</title>
+    <link href="${escapeXml(htmlLink)}" rel="alternate" type="text/html"/>
     <id>${escapeXml(entryId(date))}</id>
     <updated>${escapeXml(dayUpdated)}</updated>
-    <published>${escapeXml(`${date}T00:00:00.000Z`)}</published>
-    <content type="html">${escapeXml(formatDayContent(releases))}</content>
+    <published>${escapeXml(`${date}T00:00:00.000Z`)}</published>${
+      renderAuthor(options.authorName, options.authorUri)
+    }
+    <content type="html">${escapeXml(renderDayBodyHtml(releases))}</content>
   </entry>`;
   }).join("");
 
@@ -122,7 +76,11 @@ export function renderAtom(
   <link href="${
     escapeXml(options.feedUrl)
   }" rel="self" type="application/atom+xml"/>
-  <link href="${escapeXml(options.feedUrl)}" rel="alternate" type="text/html"/>
+  <link href="${
+    escapeXml(options.htmlUrl)
+  }" rel="alternate" type="text/html"/>${
+    renderAuthor(options.authorName, options.authorUri)
+  }
   <id>${escapeXml(options.feedUrl)}</id>
   <updated>${escapeXml(latestUpdated)}</updated>${entries}
 </feed>

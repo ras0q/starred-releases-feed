@@ -17,6 +17,21 @@ inputs:
     description: Public URL of the Atom feed for self/alternate links.
     default: https://example.github.io/starred-releases.atom
     required: false
+  html-path:
+    description: Path for the generated HTML page, relative to the calling repository root.
+    default: starred-releases.html
+    required: false
+  html-url:
+    description: Public URL of the HTML page linked from Atom entries.
+    default: https://example.github.io/starred-releases.html
+    required: false
+  author-name:
+    description: Author name included in the Atom feed.
+    default: ras0q
+    required: false
+  author-uri:
+    description: Author URI included in the Atom feed.
+    required: false
   max-runtime-minutes:
     description: Stop scanning after this many minutes and resume on the next run.
     default: "10"
