@@ -86,7 +86,7 @@ Deno.test("renderAtom emits one entry per sealed day", () => {
   }];
 
   const atom = renderAtom(state, {
-    feedUrl: "https://example.test/feed.atom",
+    feedUrl: "https://example.test/starred-releases.atom",
     title: "Starred repository releases",
     subtitle: "Daily releases",
     retentionDays: 7,
@@ -320,7 +320,7 @@ Deno.test("syncStarredReleases writes atom and state when persisting", async () 
   const directory = await Deno.makeTempDir();
   const config = testConfig({
     statePath: `${directory}/state.json`,
-    feedPath: `${directory}/feed.atom`,
+    feedPath: `${directory}/starred-releases.atom`,
   });
 
   await syncStarredReleases(config, {
@@ -353,8 +353,8 @@ function testConfig(overrides: Partial<ReturnType<typeof loadConfig>> = {}) {
   return loadConfig({
     token: "test-token",
     statePath: "state.json",
-    feedPath: "feed.atom",
-    feedUrl: "https://example.test/feed.atom",
+    feedPath: "starred-releases.atom",
+    feedUrl: "https://example.test/starred-releases.atom",
     maxRuntimeMinutes: 10,
     minRemainingPoints: 100,
     overlapMs: 86_400_000,

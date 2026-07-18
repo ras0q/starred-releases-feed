@@ -51,9 +51,9 @@ export function loadConfig(
   return {
     token,
     statePath: overrides.statePath ?? env.STATE_PATH ?? "state.json",
-    feedPath: overrides.feedPath ?? env.FEED_PATH ?? "feed.atom",
+    feedPath: overrides.feedPath ?? env.FEED_PATH ?? "starred-releases.atom",
     feedUrl: overrides.feedUrl ?? env.FEED_URL ??
-      "https://example.github.io/feed.atom",
+      "https://example.github.io/starred-releases.atom",
     maxRuntimeMinutes: overrides.maxRuntimeMinutes ??
       parsePositiveInt(env.MAX_RUNTIME_MINUTES, DEFAULTS.maxRuntimeMinutes),
     minRemainingPoints: overrides.minRemainingPoints ??

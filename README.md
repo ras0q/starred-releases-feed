@@ -50,8 +50,8 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
           state-path: pages/state.json
-          feed-path: pages/feed.atom
-          feed-url: https://<username>.github.io/feed.atom
+          feed-path: pages/starred-releases.atom
+          feed-url: https://<username>.github.io/starred-releases.atom
           max-runtime-minutes: 10
           min-remaining-points: 100
 
@@ -60,7 +60,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add feed.atom state.json
+          git add starred-releases.atom state.json
           git diff --staged --quiet || git commit -m "Update starred releases feed"
           git push origin gh-pages
 ```
@@ -79,16 +79,16 @@ git push origin gh-pages
 
 ## Action inputs
 
-| Input                  | Default      | Description                                 |
-| ---------------------- | ------------ | ------------------------------------------- |
-| `token`                | required     | PAT for starred repositories and releases   |
-| `state-path`           | `state.json` | Scan and feed state file                    |
-| `feed-path`            | `feed.atom`  | Generated Atom feed path                    |
-| `feed-url`             | example URL  | Public feed URL for Atom links              |
-| `max-runtime-minutes`  | `10`         | Stop scanning after this many minutes       |
-| `min-remaining-points` | `100`        | Stop when GraphQL points fall to this level |
-| `include-prereleases`  | `false`      | Include prerelease versions                 |
-| `include-drafts`       | `false`      | Include draft releases                      |
+| Input                  | Default                 | Description                                 |
+| ---------------------- | ----------------------- | ------------------------------------------- |
+| `token`                | required                | PAT for starred repositories and releases   |
+| `state-path`           | `state.json`            | Scan and feed state file                    |
+| `feed-path`            | `starred-releases.atom` | Generated Atom feed path                    |
+| `feed-url`             | example URL             | Public feed URL for Atom links              |
+| `max-runtime-minutes`  | `10`                    | Stop scanning after this many minutes       |
+| `min-remaining-points` | `100`                   | Stop when GraphQL points fall to this level |
+| `include-prereleases`  | `false`                 | Include prerelease versions                 |
+| `include-drafts`       | `false`                 | Include draft releases                      |
 
 ## Local development
 

@@ -31,7 +31,7 @@ Set `GITHUB_TOKEN` to a PAT that can read your starred repositories and their
 releases. Optional environment variables:
 
 - `STATE_PATH` (default: `state.json`)
-- `FEED_PATH` (default: `feed.atom`)
+- `FEED_PATH` (default: `starred-releases.atom`)
 - `FEED_URL` (public feed URL used in Atom links)
 - `MAX_RUNTIME_MINUTES` (default: `10`)
 - `MIN_REMAINING_POINTS` (default: `100`)

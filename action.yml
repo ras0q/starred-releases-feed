@@ -11,11 +11,11 @@ inputs:
     required: false
   feed-path:
     description: Path for the generated Atom feed, relative to the calling repository root.
-    default: feed.atom
+    default: starred-releases.atom
     required: false
   feed-url:
     description: Public URL of the Atom feed for self/alternate links.
-    default: https://example.github.io/feed.atom
+    default: https://example.github.io/starred-releases.atom
     required: false
   max-runtime-minutes:
     description: Stop scanning after this many minutes and resume on the next run.
