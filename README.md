@@ -14,6 +14,8 @@ GraphQL rate-limit threshold is reached and resume on the next scheduled run.
 
 ## Private repository setup
 
+Example artifact: <https://ras0q.github.io/starred-releases>
+
 1. Create a repository (often named `<username>.github.io`) to host the feed on
    GitHub Pages.
 2. Add a PAT with permission to read your starred repositories and their
