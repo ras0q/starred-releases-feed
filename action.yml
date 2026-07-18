@@ -32,6 +32,10 @@ inputs:
   author-uri:
     description: Author URI included in the Atom feed.
     required: false
+  source-repo-url:
+    description: Link to the starred-releases-feed repository shown on the HTML page.
+    default: https://github.com/ras0q/starred-releases-feed
+    required: false
   max-runtime-minutes:
     description: Stop scanning after this many minutes and resume on the next run.
     default: "10"

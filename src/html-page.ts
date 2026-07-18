@@ -27,6 +27,7 @@ export function renderHtmlPage(
     subtitle: string;
     authorName: string;
     authorUri?: string;
+    sourceRepoUrl: string;
     retentionDays: number;
     run: RunStatus;
   },
@@ -98,6 +99,11 @@ export function renderHtmlPage(
     <section id="days">
       ${daySections || "<p>No sealed release days are available yet.</p>"}
     </section>
+    <footer>
+      <p class="meta"><a href="${escapeHtml(options.sourceRepoUrl)}">${
+    escapeHtml(sourceRepoLabel(options.sourceRepoUrl))
+  }</a></p>
+    </footer>
   </body>
 </html>
 `;
@@ -107,4 +113,10 @@ function formatDuration(durationMs: number): string {
   if (durationMs < 1000) return `${durationMs} ms`;
   const seconds = Math.round(durationMs / 100) / 10;
   return `${seconds} s`;
+}
+
+function sourceRepoLabel(url: string): string {
+  const trimmed = url.replace(/\/$/, "");
+  const segment = trimmed.slice(trimmed.lastIndexOf("/") + 1);
+  return segment || trimmed;
 }

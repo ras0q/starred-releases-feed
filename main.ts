@@ -62,6 +62,7 @@ export async function syncStarredReleases(
     subtitle: "Daily releases from GitHub repositories you starred",
     authorName: config.authorName,
     authorUri: config.authorUri,
+    sourceRepoUrl: config.sourceRepoUrl,
     retentionDays: config.feedRetentionDays,
     updatedAt: d.now(),
   };

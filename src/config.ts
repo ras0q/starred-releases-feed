@@ -7,6 +7,7 @@ export type Config = {
   htmlUrl: string;
   authorName: string;
   authorUri?: string;
+  sourceRepoUrl: string;
   maxRuntimeMinutes: number;
   minRemainingPoints: number;
   overlapMs: number;
@@ -68,6 +69,8 @@ export function loadConfig(
     htmlUrl: overrides.htmlUrl ?? env.HTML_URL ?? defaultHtmlUrl(feedUrl),
     authorName: overrides.authorName ?? env.AUTHOR_NAME ?? "ras0q",
     authorUri: overrides.authorUri ?? env.AUTHOR_URI,
+    sourceRepoUrl: overrides.sourceRepoUrl ?? env.SOURCE_REPO_URL ??
+      "https://github.com/ras0q/starred-releases-feed",
     maxRuntimeMinutes: overrides.maxRuntimeMinutes ??
       parsePositiveInt(env.MAX_RUNTIME_MINUTES, DEFAULTS.maxRuntimeMinutes),
     minRemainingPoints: overrides.minRemainingPoints ??

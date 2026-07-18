@@ -55,6 +55,7 @@ if (import.meta.main) {
       htmlUrl: core.getInput("html-url"),
       authorName: core.getInput("author-name"),
       authorUri: core.getInput("author-uri") || undefined,
+      sourceRepoUrl: core.getInput("source-repo-url"),
       maxRuntimeMinutes: parsePositiveInt(core.getInput("max-runtime-minutes")),
       minRemainingPoints: parsePositiveInt(
         core.getInput("min-remaining-points"),

@@ -22,6 +22,7 @@ const renderOptions = {
   subtitle: "Daily releases",
   authorName: "ras0q",
   authorUri: "https://github.com/ras0q",
+  sourceRepoUrl: "https://github.com/ras0q/starred-releases-feed",
   retentionDays: 7,
   updatedAt: new Date("2026-07-18T00:00:00.000Z"),
 };
@@ -216,6 +217,12 @@ Deno.test("renderHtmlPage mirrors sealed days and includes run status", () => {
   assertEquals(html.includes('id="2026-07-17"'), true);
   assertEquals(html.includes('id="2026-07-16"'), true);
   assertEquals(html.includes("<h2>Daily releases</h2>"), false);
+  assertEquals(
+    html.includes(
+      'href="https://github.com/ras0q/starred-releases-feed">starred-releases-feed</a>',
+    ),
+    true,
+  );
   assertEquals(html.includes("denoland/deno</a> (1 release)"), true);
   assertEquals(
     html.indexOf('id="2026-07-17"') < html.indexOf('id="2026-07-16"'),
