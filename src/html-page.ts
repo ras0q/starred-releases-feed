@@ -96,7 +96,6 @@ export function renderHtmlPage(
       </dl>
     </section>
     <section id="days">
-      <h2>Daily releases</h2>
       ${daySections || "<p>No sealed release days are available yet.</p>"}
     </section>
   </body>

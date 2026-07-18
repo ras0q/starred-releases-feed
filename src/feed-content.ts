@@ -64,11 +64,22 @@ export function formatEntryTitle(
   return `Starred releases on ${date} (${releaseLabel} from ${repoLabel})`;
 }
 
+export function formatRepoCountLabel(releaseCount: number): string {
+  return releaseCount === 1 ? "1 release" : `${releaseCount} releases`;
+}
+
 export function formatRepoHeading(key: string, releaseCount: number): string {
-  const countLabel = releaseCount === 1
-    ? "1 release"
-    : `${releaseCount} releases`;
-  return `${key} (${countLabel})`;
+  return `${key} (${formatRepoCountLabel(releaseCount)})`;
+}
+
+function renderReleaseItemHtml(release: ReleaseRecord): string {
+  const linkedTag = `<a href="${escapeHtml(release.url)}">${
+    escapeHtml(release.tag)
+  }</a>`;
+  if (release.name) {
+    return `<li>${linkedTag} — ${escapeHtml(release.name)}</li>`;
+  }
+  return `<li>${linkedTag}</li>`;
 }
 
 /**
@@ -82,18 +93,13 @@ export function renderDayBodyHtml(releases: ReleaseRecord[]): string {
   const items = groupReleasesByRepo(releases).map(
     ({ key, releases: repoReleases }) => {
       const first = repoReleases[0];
-      const releaseItems = repoReleases.map((release) => {
-        const label = release.name
-          ? `${release.tag} — ${release.name}`
-          : release.tag;
-        return `<li><a href="${escapeHtml(release.url)}">${
-          escapeHtml(label)
-        }</a></li>`;
-      }).join("");
+      const releaseItems = repoReleases.map(renderReleaseItemHtml).join("");
 
       return `<li><a href="${escapeHtml(repoUrl(first))}">${
-        escapeHtml(formatRepoHeading(key, repoReleases.length))
-      }</a><ul>${releaseItems}</ul></li>`;
+        escapeHtml(key)
+      }</a> (${
+        escapeHtml(formatRepoCountLabel(repoReleases.length))
+      })<ul>${releaseItems}</ul></li>`;
     },
   ).join("");
 

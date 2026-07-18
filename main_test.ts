@@ -130,7 +130,7 @@ Deno.test("renderAtom emits descriptive titles, author, and html links", () => {
     ),
     true,
   );
-  assertEquals(atom.includes("denoland/deno (1 release)"), true);
+  assertEquals(atom.includes("denoland/deno&lt;/a&gt; (1 release)"), true);
   assertEquals(atom.includes("v2.0.0"), true);
 });
 
@@ -178,8 +178,8 @@ Deno.test("formatDayContent groups releases under each repository", () => {
     ),
     true,
   );
-  assertEquals(atom.includes("denoland/deno (2 releases)"), true);
-  assertEquals(atom.includes("yamcodes/arkenv (1 release)"), true);
+  assertEquals(atom.includes("denoland/deno&lt;/a&gt; (2 releases)"), true);
+  assertEquals(atom.includes("yamcodes/arkenv&lt;/a&gt; (1 release)"), true);
   assertEquals(atom.includes("v2.0.1"), true);
   assertEquals(atom.includes("@arkenv/nuxt@0.0.6"), true);
   assertEquals(atom.includes("denoland/deno@v2.0.0"), false);
@@ -215,6 +215,8 @@ Deno.test("renderHtmlPage mirrors sealed days and includes run status", () => {
   assertEquals(html.includes("1.5 s"), true);
   assertEquals(html.includes('id="2026-07-17"'), true);
   assertEquals(html.includes('id="2026-07-16"'), true);
+  assertEquals(html.includes("<h2>Daily releases</h2>"), false);
+  assertEquals(html.includes("denoland/deno</a> (1 release)"), true);
   assertEquals(
     html.indexOf('id="2026-07-17"') < html.indexOf('id="2026-07-16"'),
     true,
@@ -454,7 +456,7 @@ Deno.test("syncStarredReleases writes atom, html, and state when persisting", as
   assertEquals(state.feed.sealedDates.includes("2026-07-17"), true);
   const atom = await Deno.readTextFile(config.feedPath);
   const html = await Deno.readTextFile(config.htmlPath);
-  assertEquals(atom.includes("denoland/deno (1 release)"), true);
+  assertEquals(atom.includes("denoland/deno&lt;/a&gt; (1 release)"), true);
   assertEquals(atom.includes("v2.0.0"), true);
   assertEquals(html.includes('id="2026-07-17"'), true);
   assertEquals(html.includes("Latest run"), true);
