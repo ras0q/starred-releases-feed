@@ -14,15 +14,15 @@ export type ReleaseRecord = {
 export type RepoScanState = {
   lastReleaseId?: string;
   lastPublishedAt?: string;
-  releaseCursor?: string | null;
-  releaseCursorComplete?: boolean;
+  /** Non-null while paginating release history for this repository. */
+  releaseHistoryCursor?: string | null;
 };
 
 export type ScanState = {
-  starredCursor?: string | null;
-  starredComplete?: boolean;
-  phase2Queue?: string[];
-  phase2Index?: number;
+  /** Non-null while paginating starred repositories; null means repoll from start. */
+  starredPollCursor?: string | null;
+  releaseHistoryQueue?: string[];
+  releaseHistoryIndex?: number;
   repos: Record<string, RepoScanState>;
 };
 
@@ -71,7 +71,43 @@ function parseState(parsed: unknown): AppState {
     throw new Error("Invalid state");
   }
 
-  return root as AppState;
+  const appState = root as AppState;
+  normalizeScanState(appState.scan);
+  return appState;
+}
+
+/** Drops deprecated fields and migrates legacy scan checkpoint names. */
+function normalizeScanState(scan: ScanState): void {
+  const raw = scan as Record<string, unknown>;
+
+  delete raw.starredComplete;
+
+  if (raw.starredCursor !== undefined && raw.starredPollCursor === undefined) {
+    raw.starredPollCursor = raw.starredCursor;
+  }
+  delete raw.starredCursor;
+
+  if (raw.phase2Queue !== undefined && raw.releaseHistoryQueue === undefined) {
+    raw.releaseHistoryQueue = raw.phase2Queue;
+  }
+  delete raw.phase2Queue;
+
+  if (raw.phase2Index !== undefined && raw.releaseHistoryIndex === undefined) {
+    raw.releaseHistoryIndex = raw.phase2Index;
+  }
+  delete raw.phase2Index;
+
+  for (const repo of Object.values(scan.repos)) {
+    const repoRaw = repo as Record<string, unknown>;
+    delete repoRaw.releaseCursorComplete;
+    if (
+      repoRaw.releaseCursor !== undefined &&
+      repoRaw.releaseHistoryCursor === undefined
+    ) {
+      repoRaw.releaseHistoryCursor = repoRaw.releaseCursor;
+    }
+    delete repoRaw.releaseCursor;
+  }
 }
 
 export function emptyState(): AppState {
@@ -178,6 +214,11 @@ export function sealedFeedDays(
   retentionDays: number,
 ): string[] {
   return [...state.feed.sealedDates].sort().slice(-retentionDays);
+}
+
+/** Serializes feed buckets for change detection across sync runs. */
+export function feedSnapshot(state: AppState): string {
+  return JSON.stringify(state.feed);
 }
 
 function compareReleases(a: ReleaseRecord, b: ReleaseRecord): number {

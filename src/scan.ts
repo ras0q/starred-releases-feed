@@ -5,7 +5,7 @@ import {
   type GraphqlRelease,
   splitRepo,
 } from "./github/graphql.ts";
-import type { AppState, ReleaseRecord } from "./state.ts";
+import type { AppState, ReleaseRecord, RepoScanState } from "./state.ts";
 
 export type ScanLimits = {
   startedAt: number;
@@ -26,7 +26,8 @@ type ScanDeps = {
 };
 
 /**
- * Runs the two-phase starred-repository scan until completion or a stop condition.
+ * Polls starred repositories and fetches release history until completion or a
+ * stop condition.
  */
 export async function runScan(
   state: AppState,
@@ -45,38 +46,51 @@ export async function runScan(
     config.feedRetentionDays * 86_400_000 -
     config.overlapMs;
 
-  if (!state.scan.starredComplete) {
-    let cursor = state.scan.starredCursor ?? null;
-    while (true) {
-      if (shouldStop(limits, rateLimitRemaining)) {
-        stoppedBecause = limitsReason(limits, rateLimitRemaining);
-        break;
-      }
-
-      const page = await github.fetchStarredPage(cursor, config.pageSize);
-      rateLimitRemaining = page.rateLimit.remaining;
-
-      for (const repo of page.repos) {
-        rememberRepoSnapshot(
-          state,
-          config,
-          repo.nameWithOwner,
-          repo.latestRelease,
-        );
-        if (repoNeedsPhase2(repo.latestRelease, windowStart)) {
-          enqueuePhase2(state, repo.nameWithOwner);
-        }
-      }
-
-      cursor = page.cursor;
-      state.scan.starredCursor = cursor;
-      state.scan.starredComplete = !page.hasNextPage;
-      if (!page.hasNextPage) break;
+  let cursor = state.scan.starredPollCursor ?? null;
+  while (true) {
+    if (shouldStop(limits, rateLimitRemaining)) {
+      stoppedBecause = limitsReason(limits, rateLimitRemaining);
+      break;
     }
+
+    const page = await github.fetchStarredPage(cursor, config.pageSize);
+    rateLimitRemaining = page.rateLimit.remaining;
+
+    for (const repo of page.repos) {
+      const previousReleaseId = state.scan.repos[repo.nameWithOwner]
+        ?.lastReleaseId;
+      rememberRepoSnapshot(
+        state,
+        config,
+        repo.nameWithOwner,
+        repo.latestRelease,
+      );
+      const repoState = state.scan.repos[repo.nameWithOwner] ?? {};
+      if (
+        shouldFetchReleaseHistory(
+          repo.latestRelease,
+          previousReleaseId,
+          repoState,
+          config,
+        )
+      ) {
+        if (repo.latestRelease?.id !== previousReleaseId) {
+          resetReleaseHistory(repoState);
+        }
+        enqueueReleaseHistory(state, repo.nameWithOwner);
+      }
+    }
+
+    if (!page.hasNextPage) {
+      state.scan.starredPollCursor = null;
+      break;
+    }
+    cursor = page.cursor;
+    state.scan.starredPollCursor = cursor;
   }
 
-  const queue = state.scan.phase2Queue ?? [];
-  let index = state.scan.phase2Index ?? 0;
+  const queue = state.scan.releaseHistoryQueue ?? [];
+  let index = state.scan.releaseHistoryIndex ?? 0;
 
   while (index < queue.length) {
     if (shouldStop(limits, rateLimitRemaining)) {
@@ -88,16 +102,13 @@ export async function runScan(
     const repoState = state.scan.repos[nameWithOwner] ?? {};
     state.scan.repos[nameWithOwner] = repoState;
 
-    let cursor = repoState.releaseCursorComplete
-      ? null
-      : repoState.releaseCursor ?? null;
-    let done = repoState.releaseCursorComplete ?? false;
+    let cursor = repoState.releaseHistoryCursor ?? null;
 
-    while (!done) {
+    while (true) {
       if (shouldStop(limits, rateLimitRemaining)) {
         stoppedBecause = limitsReason(limits, rateLimitRemaining);
-        state.scan.phase2Index = index;
-        state.scan.phase2Queue = queue;
+        state.scan.releaseHistoryIndex = index;
+        state.scan.releaseHistoryQueue = queue;
         return { releases: collected, stoppedBecause, rateLimitRemaining };
       }
 
@@ -123,22 +134,24 @@ export async function runScan(
         }
       }
 
+      if (!page.hasNextPage || hitOlder) {
+        repoState.releaseHistoryCursor = null;
+        break;
+      }
       cursor = page.cursor;
-      repoState.releaseCursor = cursor;
-      done = !page.hasNextPage || hitOlder;
-      repoState.releaseCursorComplete = done;
+      repoState.releaseHistoryCursor = cursor;
     }
 
     index += 1;
-    state.scan.phase2Index = index;
+    state.scan.releaseHistoryIndex = index;
   }
 
   if (index >= queue.length) {
-    state.scan.phase2Queue = [];
-    state.scan.phase2Index = 0;
+    state.scan.releaseHistoryQueue = [];
+    state.scan.releaseHistoryIndex = 0;
   } else {
-    state.scan.phase2Queue = queue;
-    state.scan.phase2Index = index;
+    state.scan.releaseHistoryQueue = queue;
+    state.scan.releaseHistoryIndex = index;
   }
 
   return { releases: collected, stoppedBecause, rateLimitRemaining };
@@ -178,20 +191,35 @@ function acceptRelease(release: GraphqlRelease, config: Config): boolean {
   return Boolean(release.publishedAt);
 }
 
-function repoNeedsPhase2(
+function shouldFetchReleaseHistory(
   latest: GraphqlRelease | null,
-  windowStart: number,
+  previousReleaseId: string | undefined,
+  repoState: RepoScanState,
+  config: Config,
 ): boolean {
-  if (!latest?.publishedAt) return false;
-  return Date.parse(latest.publishedAt) >= windowStart;
+  if (
+    latest?.publishedAt &&
+    acceptRelease(latest, config) &&
+    latest.id !== previousReleaseId
+  ) {
+    return true;
+  }
+  if (repoState.releaseHistoryCursor != null) {
+    return true;
+  }
+  return false;
 }
 
-function enqueuePhase2(state: AppState, nameWithOwner: string): void {
-  const queue = state.scan.phase2Queue ?? [];
+function resetReleaseHistory(repoState: RepoScanState): void {
+  repoState.releaseHistoryCursor = null;
+}
+
+function enqueueReleaseHistory(state: AppState, nameWithOwner: string): void {
+  const queue = state.scan.releaseHistoryQueue ?? [];
   if (!queue.includes(nameWithOwner)) {
     queue.push(nameWithOwner);
   }
-  state.scan.phase2Queue = queue;
+  state.scan.releaseHistoryQueue = queue;
 }
 
 function rememberRepoSnapshot(

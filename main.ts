@@ -3,6 +3,7 @@ import type { Config } from "./src/config.ts";
 import { renderHtmlPage } from "./src/html-page.ts";
 import { runScan, scanLimits } from "./src/scan.ts";
 import {
+  feedSnapshot,
   loadState,
   mergeReleases,
   pruneFeed,
@@ -17,6 +18,7 @@ export type SyncResult = {
   releaseCount: number;
   sealedDays: number;
   durationMs: number;
+  feedChanged: boolean;
 };
 
 type SyncDeps = {
@@ -41,6 +43,7 @@ export async function syncStarredReleases(
 
   const started = Date.now();
   const state = await loadState(config.statePath);
+  const feedBefore = feedSnapshot(state);
   console.error(
     `Sync started: retention=${config.feedRetentionDays} days, runtime=${config.maxRuntimeMinutes} min, min points=${config.minRemainingPoints}`,
   );
@@ -55,6 +58,25 @@ export async function syncStarredReleases(
   sealPastDays(state, d.now());
   pruneFeed(state, config.feedRetentionDays);
 
+  const durationMs = Date.now() - started;
+  const feedChanged = feedBefore !== feedSnapshot(state);
+  const scanIncomplete = scan.stoppedBecause !== "complete";
+
+  if (!feedChanged && !scanIncomplete) {
+    console.error(
+      `Sync finished: no feed changes, releases=${scan.releases.length}, stop=${scan.stoppedBecause}, duration=${durationMs}ms`,
+    );
+    return {
+      atom: "",
+      html: "",
+      stoppedBecause: scan.stoppedBecause,
+      releaseCount: scan.releases.length,
+      sealedDays: state.feed.sealedDates.length,
+      durationMs,
+      feedChanged: false,
+    };
+  }
+
   const renderOptions = {
     feedUrl: config.feedUrl,
     htmlUrl: config.htmlUrl,
@@ -67,7 +89,6 @@ export async function syncStarredReleases(
     updatedAt: d.now(),
   };
 
-  const durationMs = Date.now() - started;
   const run = {
     stoppedBecause: scan.stoppedBecause,
     releaseCount: scan.releases.length,
@@ -76,17 +97,23 @@ export async function syncStarredReleases(
     generatedAt: d.now(),
   };
 
-  const atom = renderAtom(state, renderOptions);
-  const html = renderHtmlPage(state, { ...renderOptions, run });
+  const atom = feedChanged ? renderAtom(state, renderOptions) : "";
+  const html = feedChanged
+    ? renderHtmlPage(state, { ...renderOptions, run })
+    : "";
 
   if (d.persist) {
-    await saveState(config.statePath, state);
-    await writeFile(config.feedPath, atom);
-    await writeFile(config.htmlPath, html);
+    if (feedChanged) {
+      await saveState(config.statePath, state);
+      await writeFile(config.feedPath, atom);
+      await writeFile(config.htmlPath, html);
+    } else {
+      await saveState(config.statePath, state);
+    }
   }
 
   console.error(
-    `Sync finished: releases=${scan.releases.length}, sealed days=${state.feed.sealedDates.length}, stop=${scan.stoppedBecause}, duration=${durationMs}ms`,
+    `Sync finished: releases=${scan.releases.length}, sealed days=${state.feed.sealedDates.length}, stop=${scan.stoppedBecause}, feed changed=${feedChanged}, duration=${durationMs}ms`,
   );
 
   return {
@@ -96,6 +123,7 @@ export async function syncStarredReleases(
     releaseCount: scan.releases.length,
     sealedDays: state.feed.sealedDates.length,
     durationMs,
+    feedChanged,
   };
 }
 

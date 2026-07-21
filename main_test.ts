@@ -234,7 +234,7 @@ Deno.test("renderHtmlPage mirrors sealed days and includes run status", () => {
   );
 });
 
-Deno.test("runScan checkpoints starred pagination and resumes phase 2", async () => {
+Deno.test("runScan checkpoints starred poll and resumes release history fetch", async () => {
   const state = emptyState();
   const config = testConfig();
   let starredCalls = 0;
@@ -305,8 +305,7 @@ Deno.test("runScan checkpoints starred pagination and resumes phase 2", async ()
 
   assertEquals(starredCalls, 1);
   assertEquals(releaseCalls, 0);
-  assertEquals(state.scan.starredCursor, "cursor-1");
-  assertEquals(state.scan.starredComplete, false);
+  assertEquals(state.scan.starredPollCursor, "cursor-1");
   assertEquals(first.stoppedBecause, "rate-limit");
   assertEquals(first.releases.length, 0);
 
@@ -358,7 +357,85 @@ Deno.test("runScan checkpoints starred pagination and resumes phase 2", async ()
   assertEquals(starredCalls, 2);
   assertEquals(releaseCalls, 1);
   assertEquals(second.releases.length, 1);
-  assertEquals(state.scan.starredComplete, true);
+  assertEquals(state.scan.starredPollCursor, null);
+});
+
+Deno.test("runScan repolls starred repositories after a completed scan", async () => {
+  const state = emptyState();
+  state.scan.repos["denoland/deno"] = {
+    lastReleaseId: "rel-1",
+    lastPublishedAt: "2026-07-17T10:00:00.000Z",
+  };
+  const config = testConfig();
+  let starredCalls = 0;
+  let releaseCalls = 0;
+
+  const result = await runScan(
+    state,
+    config,
+    scanLimits(config, Date.now()),
+    {
+      fetch: (_input, init) => {
+        const body = JSON.parse(String(init?.body)) as { query: string };
+        if (body.query.includes("StarredRepos")) {
+          starredCalls++;
+          return Promise.resolve(githubGraphqlResponse({
+            viewer: {
+              starredRepositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                edges: [{
+                  node: {
+                    nameWithOwner: "denoland/deno",
+                    releases: {
+                      nodes: [{
+                        id: "rel-2",
+                        tagName: "v2.0.1",
+                        name: "Deno 2.0.1",
+                        isDraft: false,
+                        isPrerelease: false,
+                        publishedAt: "2026-07-18T10:00:00.000Z",
+                        url:
+                          "https://github.com/denoland/deno/releases/tag/v2.0.1",
+                      }],
+                    },
+                  },
+                }],
+              },
+            },
+            rateLimit: {
+              remaining: 4_000,
+              resetAt: "2026-07-19T01:00:00Z",
+            },
+          }));
+        }
+        releaseCalls++;
+        return Promise.resolve(githubGraphqlResponse({
+          repository: {
+            releases: {
+              pageInfo: { hasNextPage: false, endCursor: null },
+              nodes: [{
+                id: "rel-2",
+                tagName: "v2.0.1",
+                name: "Deno 2.0.1",
+                isDraft: false,
+                isPrerelease: false,
+                publishedAt: "2026-07-18T10:00:00.000Z",
+                url: "https://github.com/denoland/deno/releases/tag/v2.0.1",
+              }],
+            },
+          },
+          rateLimit: { remaining: 3_999, resetAt: "2026-07-19T01:00:00Z" },
+        }));
+      },
+      now: () => new Date("2026-07-19T00:00:00.000Z"),
+    },
+  );
+
+  assertEquals(starredCalls, 1);
+  assertEquals(releaseCalls, 1);
+  assertEquals(result.releases.length, 1);
+  assertEquals(result.releases[0]?.tag, "v2.0.1");
+  assertEquals(state.scan.repos["denoland/deno"]?.lastReleaseId, "rel-2");
 });
 
 Deno.test("runScan excludes draft and prerelease releases by default", async () => {
@@ -467,6 +544,84 @@ Deno.test("syncStarredReleases writes atom, html, and state when persisting", as
   assertEquals(atom.includes("v2.0.0"), true);
   assertEquals(html.includes('id="2026-07-17"'), true);
   assertEquals(html.includes("Latest run"), true);
+});
+
+Deno.test("syncStarredReleases skips writes when feed content is unchanged", async () => {
+  const directory = await Deno.makeTempDir();
+  const config = testConfig({
+    statePath: `${directory}/state.json`,
+    feedPath: `${directory}/starred-releases.atom`,
+    htmlPath: `${directory}/starred-releases.html`,
+  });
+  const now = () => new Date("2026-07-19T00:00:00.000Z");
+  const fetch = mockGithubFetch();
+
+  await syncStarredReleases(config, { fetch, now });
+  const atomAfterFirst = await Deno.readTextFile(config.feedPath);
+  const htmlAfterFirst = await Deno.readTextFile(config.htmlPath);
+  const stateAfterFirst = await Deno.readTextFile(config.statePath);
+
+  const second = await syncStarredReleases(config, { fetch, now });
+
+  assertEquals(second.feedChanged, false);
+  assertEquals(await Deno.readTextFile(config.feedPath), atomAfterFirst);
+  assertEquals(await Deno.readTextFile(config.htmlPath), htmlAfterFirst);
+  assertEquals(await Deno.readTextFile(config.statePath), stateAfterFirst);
+});
+
+Deno.test("loadState migrates deprecated scan checkpoint fields", async () => {
+  const directory = await Deno.makeTempDir();
+  const path = `${directory}/state.json`;
+  await Deno.writeTextFile(
+    path,
+    JSON.stringify({
+      schemaVersion: 1,
+      feed: { sealedDates: [], days: {} },
+      scan: {
+        starredComplete: true,
+        starredCursor: "cursor-legacy",
+        phase2Queue: ["denoland/deno"],
+        phase2Index: 1,
+        repos: {
+          "denoland/deno": {
+            releaseCursorComplete: true,
+            releaseCursor: "release-cursor-legacy",
+          },
+        },
+      },
+    }),
+  );
+
+  const state = await loadState(path);
+  assertEquals(
+    (state.scan as Record<string, unknown>).starredComplete,
+    undefined,
+  );
+  assertEquals(
+    (state.scan as Record<string, unknown>).starredCursor,
+    undefined,
+  );
+  assertEquals(state.scan.starredPollCursor, "cursor-legacy");
+  assertEquals(
+    (state.scan as Record<string, unknown>).phase2Queue,
+    undefined,
+  );
+  assertEquals(state.scan.releaseHistoryQueue, ["denoland/deno"]);
+  assertEquals(state.scan.releaseHistoryIndex, 1);
+  assertEquals(
+    (state.scan.repos["denoland/deno"] as Record<string, unknown>)
+      .releaseCursorComplete,
+    undefined,
+  );
+  assertEquals(
+    (state.scan.repos["denoland/deno"] as Record<string, unknown>)
+      .releaseCursor,
+    undefined,
+  );
+  assertEquals(
+    state.scan.repos["denoland/deno"]?.releaseHistoryCursor,
+    "release-cursor-legacy",
+  );
 });
 
 Deno.test("state rejects malformed cache data", async () => {
