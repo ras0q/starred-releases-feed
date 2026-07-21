@@ -95,7 +95,7 @@ Deno.test("pruneFeed keeps only the newest sealed days", () => {
   assertEquals(state.feed.days["2026-07-18"]?.length, 0);
 });
 
-Deno.test("renderAtom emits descriptive titles, author, and html links", () => {
+Deno.test("renderAtom", async (t) => {
   const state = emptyState();
   state.feed.sealedDates = ["2026-07-17"];
   state.feed.days["2026-07-17"] = [{
@@ -107,35 +107,10 @@ Deno.test("renderAtom emits descriptive titles, author, and html links", () => {
     publishedAt: "2026-07-17T10:00:00.000Z",
   }];
 
-  const atom = renderAtom(state, renderOptions);
-
-  assertEquals(
-    atom.includes('<feed xmlns="http://www.w3.org/2005/Atom">'),
-    true,
-  );
-  assertEquals(
-    atom.includes("tag:github.com,2008:starred-releases:2026-07-17"),
-    true,
-  );
-  assertEquals(
-    atom.includes(
-      "Starred releases on 2026-07-17 (1 release from 1 repository)",
-    ),
-    true,
-  );
-  assertEquals(atom.includes("<name>ras0q</name>"), true);
-  assertEquals(atom.includes("https://github.com/ras0q"), true);
-  assertEquals(
-    atom.includes(
-      'href="https://example.test/starred-releases.html#2026-07-17"',
-    ),
-    true,
-  );
-  assertEquals(atom.includes("denoland/deno&lt;/a&gt; (1 release)"), true);
-  assertEquals(atom.includes("v2.0.0"), true);
+  await t.assertSnapshot(renderAtom(state, renderOptions));
 });
 
-Deno.test("formatDayContent groups releases under each repository", () => {
+Deno.test("renderAtom groups releases under each repository", async (t) => {
   const state = emptyState();
   state.feed.sealedDates = ["2026-07-17"];
   state.feed.days["2026-07-17"] = [
@@ -165,28 +140,16 @@ Deno.test("formatDayContent groups releases under each repository", () => {
     },
   ];
 
-  const atom = renderAtom(state, renderOptions);
-
   assertEquals(
     groupReleasesByRepo(state.feed.days["2026-07-17"]).map((group) =>
       group.key
     ),
     ["denoland/deno", "yamcodes/arkenv"],
   );
-  assertEquals(
-    atom.includes(
-      "Starred releases on 2026-07-17 (3 releases from 2 repositories)",
-    ),
-    true,
-  );
-  assertEquals(atom.includes("denoland/deno&lt;/a&gt; (2 releases)"), true);
-  assertEquals(atom.includes("yamcodes/arkenv&lt;/a&gt; (1 release)"), true);
-  assertEquals(atom.includes("v2.0.1"), true);
-  assertEquals(atom.includes("@arkenv/nuxt@0.0.6"), true);
-  assertEquals(atom.includes("denoland/deno@v2.0.0"), false);
+  await t.assertSnapshot(renderAtom(state, renderOptions));
 });
 
-Deno.test("renderHtmlPage mirrors sealed days and includes run status", () => {
+Deno.test("renderHtmlPage", async (t) => {
   const state = emptyState();
   state.feed.sealedDates = ["2026-07-16", "2026-07-17"];
   state.feed.days["2026-07-16"] = [];
@@ -199,7 +162,7 @@ Deno.test("renderHtmlPage mirrors sealed days and includes run status", () => {
     publishedAt: "2026-07-17T10:00:00.000Z",
   }];
 
-  const html = renderHtmlPage(state, {
+  await t.assertSnapshot(renderHtmlPage(state, {
     ...renderOptions,
     run: {
       stoppedBecause: "complete",
@@ -208,30 +171,7 @@ Deno.test("renderHtmlPage mirrors sealed days and includes run status", () => {
       durationMs: 1500,
       generatedAt: new Date("2026-07-18T00:00:00.000Z"),
     },
-  });
-
-  assertEquals(html.includes('id="status"'), true);
-  assertEquals(html.includes("Stopped because"), true);
-  assertEquals(html.includes("complete"), true);
-  assertEquals(html.includes("1.5 s"), true);
-  assertEquals(html.includes('id="2026-07-17"'), true);
-  assertEquals(html.includes('id="2026-07-16"'), true);
-  assertEquals(html.includes("<h2>Daily releases</h2>"), false);
-  assertEquals(
-    html.includes(
-      'href="https://github.com/ras0q/starred-releases-feed">starred-releases-feed</a>',
-    ),
-    true,
-  );
-  assertEquals(html.includes("denoland/deno</a> (1 release)"), true);
-  assertEquals(
-    html.indexOf('id="2026-07-17"') < html.indexOf('id="2026-07-16"'),
-    true,
-  );
-  assertEquals(
-    html.includes("Starred releases on 2026-07-16 (no releases)"),
-    true,
-  );
+  }));
 });
 
 Deno.test("runScan checkpoints starred poll and resumes release history fetch", async () => {
@@ -523,7 +463,7 @@ Deno.test("runScan excludes draft and prerelease releases by default", async () 
   assertEquals(result.releases.map((release) => release.id), ["stable"]);
 });
 
-Deno.test("syncStarredReleases writes atom, html, and state when persisting", async () => {
+Deno.test("syncStarredReleases writes atom, html, and state when persisting", async (t) => {
   const directory = await Deno.makeTempDir();
   const config = testConfig({
     statePath: `${directory}/state.json`,
@@ -537,13 +477,11 @@ Deno.test("syncStarredReleases writes atom, html, and state when persisting", as
   });
 
   const state = await loadState(config.statePath);
-  assertEquals(state.feed.sealedDates.includes("2026-07-17"), true);
-  const atom = await Deno.readTextFile(config.feedPath);
-  const html = await Deno.readTextFile(config.htmlPath);
-  assertEquals(atom.includes("denoland/deno&lt;/a&gt; (1 release)"), true);
-  assertEquals(atom.includes("v2.0.0"), true);
-  assertEquals(html.includes('id="2026-07-17"'), true);
-  assertEquals(html.includes("Latest run"), true);
+  await t.assertSnapshot({
+    atom: await Deno.readTextFile(config.feedPath),
+    html: await Deno.readTextFile(config.htmlPath),
+    state,
+  });
 });
 
 Deno.test("syncStarredReleases skips writes when feed content is unchanged", async () => {
@@ -569,7 +507,7 @@ Deno.test("syncStarredReleases skips writes when feed content is unchanged", asy
   assertEquals(await Deno.readTextFile(config.statePath), stateAfterFirst);
 });
 
-Deno.test("loadState migrates deprecated scan checkpoint fields", async () => {
+Deno.test("loadState migrates deprecated scan checkpoint fields", async (t) => {
   const directory = await Deno.makeTempDir();
   const path = `${directory}/state.json`;
   await Deno.writeTextFile(
@@ -593,35 +531,7 @@ Deno.test("loadState migrates deprecated scan checkpoint fields", async () => {
   );
 
   const state = await loadState(path);
-  assertEquals(
-    (state.scan as Record<string, unknown>).starredComplete,
-    undefined,
-  );
-  assertEquals(
-    (state.scan as Record<string, unknown>).starredCursor,
-    undefined,
-  );
-  assertEquals(state.scan.starredPollCursor, "cursor-legacy");
-  assertEquals(
-    (state.scan as Record<string, unknown>).phase2Queue,
-    undefined,
-  );
-  assertEquals(state.scan.releaseHistoryQueue, ["denoland/deno"]);
-  assertEquals(state.scan.releaseHistoryIndex, 1);
-  assertEquals(
-    (state.scan.repos["denoland/deno"] as Record<string, unknown>)
-      .releaseCursorComplete,
-    undefined,
-  );
-  assertEquals(
-    (state.scan.repos["denoland/deno"] as Record<string, unknown>)
-      .releaseCursor,
-    undefined,
-  );
-  assertEquals(
-    state.scan.repos["denoland/deno"]?.releaseHistoryCursor,
-    "release-cursor-legacy",
-  );
+  await t.assertSnapshot(state.scan);
 });
 
 Deno.test("state rejects malformed cache data", async () => {

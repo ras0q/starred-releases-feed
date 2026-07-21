@@ -1,0 +1,261 @@
+export const snapshot = {};
+
+snapshot[`renderAtom 1`] = `
+'<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Starred repository releases</title>
+  <subtitle>Daily releases</subtitle>
+  <link href="https://example.test/starred-releases.atom" rel="self" type="application/atom+xml"/>
+  <link href="https://example.test/starred-releases.html" rel="alternate" type="text/html"/>
+  <author>
+    <name>ras0q</name>
+    <uri>https://github.com/ras0q</uri>
+  </author>
+  <id>https://example.test/starred-releases.atom</id>
+  <updated>2026-07-17T10:00:00.000Z</updated>
+  <entry>
+    <title>Starred releases on 2026-07-17 (1 release from 1 repository)</title>
+    <link href="https://example.test/starred-releases.html#2026-07-17" rel="alternate" type="text/html"/>
+    <id>tag:github.com,2008:starred-releases:2026-07-17</id>
+    <updated>2026-07-17T10:00:00.000Z</updated>
+    <published>2026-07-17T00:00:00.000Z</published>
+  <author>
+    <name>ras0q</name>
+    <uri>https://github.com/ras0q</uri>
+  </author>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/denoland/deno&quot;&gt;denoland/deno&lt;/a&gt; (1 release)&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/denoland/deno/releases/tag/v2.0.0&quot;&gt;v2.0.0&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+</feed>
+'
+`;
+
+snapshot[`renderAtom groups releases under each repository 1`] = `
+'<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Starred repository releases</title>
+  <subtitle>Daily releases</subtitle>
+  <link href="https://example.test/starred-releases.atom" rel="self" type="application/atom+xml"/>
+  <link href="https://example.test/starred-releases.html" rel="alternate" type="text/html"/>
+  <author>
+    <name>ras0q</name>
+    <uri>https://github.com/ras0q</uri>
+  </author>
+  <id>https://example.test/starred-releases.atom</id>
+  <updated>2026-07-17T10:00:00.000Z</updated>
+  <entry>
+    <title>Starred releases on 2026-07-17 (3 releases from 2 repositories)</title>
+    <link href="https://example.test/starred-releases.html#2026-07-17" rel="alternate" type="text/html"/>
+    <id>tag:github.com,2008:starred-releases:2026-07-17</id>
+    <updated>2026-07-17T10:00:00.000Z</updated>
+    <published>2026-07-17T00:00:00.000Z</published>
+  <author>
+    <name>ras0q</name>
+    <uri>https://github.com/ras0q</uri>
+  </author>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/denoland/deno&quot;&gt;denoland/deno&lt;/a&gt; (2 releases)&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/denoland/deno/releases/tag/v2.0.1&quot;&gt;v2.0.1&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/denoland/deno/releases/tag/v2.0.0&quot;&gt;v2.0.0&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/yamcodes/arkenv&quot;&gt;yamcodes/arkenv&lt;/a&gt; (1 release)&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/yamcodes/arkenv/releases/tag/@arkenv/nuxt@0.0.6&quot;&gt;@arkenv/nuxt@0.0.6&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+</feed>
+'
+`;
+
+snapshot[`renderHtmlPage 1`] = `
+'<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Starred repository releases</title>
+    <link rel="alternate" type="application/atom+xml" href="https://example.test/starred-releases.atom" title="Starred repository releases">
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        margin: 2rem auto;
+        max-width: 48rem;
+        padding: 0 1rem;
+      }
+      header, section, article { margin-bottom: 2rem; }
+      dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+      dt { font-weight: 600; }
+      ul { padding-left: 1.25rem; }
+      .day ul ul { margin-top: 0.25rem; }
+      .meta { color: #666; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Starred repository releases</h1>
+      <p class="meta">Daily releases</p>
+      <p class="meta">By <a href="https://github.com/ras0q">ras0q</a></p>
+      <p><a href="https://example.test/starred-releases.atom">Subscribe via Atom</a></p>
+    </header>
+    <section id="status">
+      <h2>Latest run</h2>
+      <dl>
+        <dt>Generated at</dt>
+        <dd>2026-07-18T00:00:00.000Z</dd>
+        <dt>Stopped because</dt>
+        <dd>complete</dd>
+        <dt>Releases merged this run</dt>
+        <dd>1</dd>
+        <dt>Sealed days shown</dt>
+        <dd>2</dd>
+        <dt>Duration</dt>
+        <dd>1.5 s</dd>
+      </dl>
+    </section>
+    <section id="days">
+      
+    <article class="day" id="2026-07-17">
+      <h2>Starred releases on 2026-07-17 (1 release from 1 repository)</h2>
+      <ul><li><a href="https://github.com/denoland/deno">denoland/deno</a> (1 release)<ul><li><a href="https://github.com/denoland/deno/releases/tag/v2.0.0">v2.0.0</a></li></ul></li></ul>
+    </article>
+    <article class="day" id="2026-07-16">
+      <h2>Starred releases on 2026-07-16 (no releases)</h2>
+      <p>No starred repository releases on this day.</p>
+    </article>
+    </section>
+    <footer>
+      <p class="meta"><a href="https://github.com/ras0q/starred-releases-feed">starred-releases-feed</a></p>
+    </footer>
+  </body>
+</html>
+'
+`;
+
+snapshot[`syncStarredReleases writes atom, html, and state when persisting 1`] = `
+{
+  atom: '<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Starred repository releases</title>
+  <subtitle>Daily releases from GitHub repositories you starred</subtitle>
+  <link href="https://example.test/starred-releases.atom" rel="self" type="application/atom+xml"/>
+  <link href="https://example.test/starred-releases.html" rel="alternate" type="text/html"/>
+  <author>
+    <name>ras0q</name>
+  </author>
+  <id>https://example.test/starred-releases.atom</id>
+  <updated>2026-07-17T10:00:00.000Z</updated>
+  <entry>
+    <title>Starred releases on 2026-07-17 (1 release from 1 repository)</title>
+    <link href="https://example.test/starred-releases.html#2026-07-17" rel="alternate" type="text/html"/>
+    <id>tag:github.com,2008:starred-releases:2026-07-17</id>
+    <updated>2026-07-17T10:00:00.000Z</updated>
+    <published>2026-07-17T00:00:00.000Z</published>
+  <author>
+    <name>ras0q</name>
+  </author>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/denoland/deno&quot;&gt;denoland/deno&lt;/a&gt; (1 release)&lt;ul&gt;&lt;li&gt;&lt;a href=&quot;https://github.com/denoland/deno/releases/tag/v2.0.0&quot;&gt;v2.0.0&lt;/a&gt; — Deno 2&lt;/li&gt;&lt;/ul&gt;&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+</feed>
+',
+  html: '<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Starred repository releases</title>
+    <link rel="alternate" type="application/atom+xml" href="https://example.test/starred-releases.atom" title="Starred repository releases">
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        margin: 2rem auto;
+        max-width: 48rem;
+        padding: 0 1rem;
+      }
+      header, section, article { margin-bottom: 2rem; }
+      dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+      dt { font-weight: 600; }
+      ul { padding-left: 1.25rem; }
+      .day ul ul { margin-top: 0.25rem; }
+      .meta { color: #666; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Starred repository releases</h1>
+      <p class="meta">Daily releases from GitHub repositories you starred</p>
+      <p class="meta">By ras0q</p>
+      <p><a href="https://example.test/starred-releases.atom">Subscribe via Atom</a></p>
+    </header>
+    <section id="status">
+      <h2>Latest run</h2>
+      <dl>
+        <dt>Generated at</dt>
+        <dd>2026-07-18T00:00:00.000Z</dd>
+        <dt>Stopped because</dt>
+        <dd>complete</dd>
+        <dt>Releases merged this run</dt>
+        <dd>1</dd>
+        <dt>Sealed days shown</dt>
+        <dd>1</dd>
+        <dt>Duration</dt>
+        <dd>1 ms</dd>
+      </dl>
+    </section>
+    <section id="days">
+      
+    <article class="day" id="2026-07-17">
+      <h2>Starred releases on 2026-07-17 (1 release from 1 repository)</h2>
+      <ul><li><a href="https://github.com/denoland/deno">denoland/deno</a> (1 release)<ul><li><a href="https://github.com/denoland/deno/releases/tag/v2.0.0">v2.0.0</a> — Deno 2</li></ul></li></ul>
+    </article>
+    </section>
+    <footer>
+      <p class="meta"><a href="https://github.com/ras0q/starred-releases-feed">starred-releases-feed</a></p>
+    </footer>
+  </body>
+</html>
+',
+  state: {
+    feed: {
+      days: {
+        "2026-07-17": [
+          {
+            id: "rel-1",
+            name: "Deno 2",
+            owner: "denoland",
+            publishedAt: "2026-07-17T10:00:00.000Z",
+            repo: "deno",
+            tag: "v2.0.0",
+            url: "https://github.com/denoland/deno/releases/tag/v2.0.0",
+          },
+        ],
+      },
+      sealedDates: [
+        "2026-07-17",
+      ],
+    },
+    scan: {
+      releaseHistoryIndex: 0,
+      releaseHistoryQueue: [],
+      repos: {
+        "denoland/deno": {
+          lastPublishedAt: "2026-07-17T10:00:00.000Z",
+          lastReleaseId: "rel-1",
+          releaseHistoryCursor: null,
+        },
+      },
+      starredPollCursor: null,
+    },
+    schemaVersion: 1,
+  },
+}
+`;
+
+snapshot[`loadState migrates deprecated scan checkpoint fields 1`] = `
+{
+  releaseHistoryIndex: 1,
+  releaseHistoryQueue: [
+    "denoland/deno",
+  ],
+  repos: {
+    "denoland/deno": {
+      releaseHistoryCursor: "release-cursor-legacy",
+    },
+  },
+  starredPollCursor: "cursor-legacy",
+}
+`;
