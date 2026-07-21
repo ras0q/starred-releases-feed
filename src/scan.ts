@@ -197,12 +197,13 @@ function shouldFetchReleaseHistory(
   repoState: RepoScanState,
   config: Config,
 ): boolean {
-  if (
-    latest?.publishedAt &&
-    acceptRelease(latest, config) &&
-    latest.id !== previousReleaseId
-  ) {
-    return true;
+  if (latest?.publishedAt && acceptRelease(latest, config)) {
+    if (latest.id !== previousReleaseId) return true;
+
+    const previousPublishedAt = repoState.lastPublishedAt
+      ? Date.parse(repoState.lastPublishedAt)
+      : 0;
+    if (Date.parse(latest.publishedAt) > previousPublishedAt) return true;
   }
   if (repoState.releaseHistoryCursor != null) {
     return true;

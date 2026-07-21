@@ -59,55 +59,74 @@ function parseState(parsed: unknown): AppState {
     throw new Error("Invalid state");
   }
 
-  const scan = root.scan;
-  if (!scan || typeof scan !== "object" || Array.isArray(scan)) {
+  const scan = parseScanState(root.scan);
+
+  return {
+    schemaVersion: 1,
+    feed: feedObj as FeedState,
+    scan,
+  };
+}
+
+function parseScanState(raw: unknown): ScanState {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new Error("Invalid state");
   }
-  const scanObj = scan as Record<string, unknown>;
+
+  const scan = raw as Record<string, unknown>;
   if (
-    !scanObj.repos || typeof scanObj.repos !== "object" ||
-    Array.isArray(scanObj.repos)
+    !scan.repos || typeof scan.repos !== "object" || Array.isArray(scan.repos)
   ) {
     throw new Error("Invalid state");
   }
 
-  const appState = root as AppState;
-  normalizeScanState(appState.scan);
-  return appState;
+  const repos: Record<string, RepoScanState> = {};
+  for (const [nameWithOwner, repoRaw] of Object.entries(scan.repos)) {
+    repos[nameWithOwner] = parseRepoScanState(repoRaw);
+  }
+
+  return {
+    starredPollCursor: parseNullableString(scan.starredPollCursor),
+    releaseHistoryQueue: parseStringArray(scan.releaseHistoryQueue),
+    releaseHistoryIndex: parseOptionalIndex(scan.releaseHistoryIndex),
+    repos,
+  };
 }
 
-/** Drops deprecated fields and migrates legacy scan checkpoint names. */
-function normalizeScanState(scan: ScanState): void {
-  const raw = scan as Record<string, unknown>;
-
-  delete raw.starredComplete;
-
-  if (raw.starredCursor !== undefined && raw.starredPollCursor === undefined) {
-    raw.starredPollCursor = raw.starredCursor;
+function parseRepoScanState(raw: unknown): RepoScanState {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Invalid state");
   }
-  delete raw.starredCursor;
 
-  if (raw.phase2Queue !== undefined && raw.releaseHistoryQueue === undefined) {
-    raw.releaseHistoryQueue = raw.phase2Queue;
-  }
-  delete raw.phase2Queue;
+  const repo = raw as Record<string, unknown>;
+  return {
+    lastReleaseId: parseOptionalString(repo.lastReleaseId),
+    lastPublishedAt: parseOptionalString(repo.lastPublishedAt),
+    releaseHistoryCursor: parseNullableString(repo.releaseHistoryCursor),
+  };
+}
 
-  if (raw.phase2Index !== undefined && raw.releaseHistoryIndex === undefined) {
-    raw.releaseHistoryIndex = raw.phase2Index;
-  }
-  delete raw.phase2Index;
+function parseOptionalString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
 
-  for (const repo of Object.values(scan.repos)) {
-    const repoRaw = repo as Record<string, unknown>;
-    delete repoRaw.releaseCursorComplete;
-    if (
-      repoRaw.releaseCursor !== undefined &&
-      repoRaw.releaseHistoryCursor === undefined
-    ) {
-      repoRaw.releaseHistoryCursor = repoRaw.releaseCursor;
-    }
-    delete repoRaw.releaseCursor;
+function parseNullableString(value: unknown): string | null | undefined {
+  if (value === null) return null;
+  return typeof value === "string" ? value : undefined;
+}
+
+function parseOptionalIndex(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : undefined;
+}
+
+function parseStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  if (!value.every((entry) => typeof entry === "string")) {
+    throw new Error("Invalid state");
   }
+  return value;
 }
 
 export function emptyState(): AppState {

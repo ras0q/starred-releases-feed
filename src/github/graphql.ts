@@ -55,7 +55,7 @@ query StarredRepos($cursor: String, $pageSize: Int!) {
       edges {
         node {
           nameWithOwner
-          releases(first: 1, orderBy: {field: CREATED_AT, direction: DESC}) {
+          releases(first: 5, orderBy: {field: CREATED_AT, direction: DESC}) {
             nodes {
               id
               tagName
@@ -149,7 +149,7 @@ export function createGithubClient(
       return {
         repos: data.viewer.starredRepositories.edges.map((edge) => ({
           nameWithOwner: edge.node.nameWithOwner,
-          latestRelease: edge.node.releases.nodes[0] ?? null,
+          latestRelease: pickLatestRelease(edge.node.releases.nodes),
         })),
         cursor: data.viewer.starredRepositories.pageInfo.endCursor,
         hasNextPage: data.viewer.starredRepositories.pageInfo.hasNextPage,
@@ -186,4 +186,14 @@ export function splitRepo(nameWithOwner: string): [string, string] {
     throw new Error(`Invalid repository name: ${nameWithOwner}`);
   }
   return [nameWithOwner.slice(0, index), nameWithOwner.slice(index + 1)];
+}
+
+function pickLatestRelease(releases: GraphqlRelease[]): GraphqlRelease | null {
+  for (const release of releases) {
+    if (release.isDraft || release.isPrerelease || !release.publishedAt) {
+      continue;
+    }
+    return release;
+  }
+  return null;
 }

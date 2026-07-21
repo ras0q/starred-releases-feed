@@ -507,7 +507,7 @@ Deno.test("syncStarredReleases skips writes when feed content is unchanged", asy
   assertEquals(await Deno.readTextFile(config.statePath), stateAfterFirst);
 });
 
-Deno.test("loadState migrates deprecated scan checkpoint fields", async (t) => {
+Deno.test("loadState reads scan checkpoint fields", async (t) => {
   const directory = await Deno.makeTempDir();
   const path = `${directory}/state.json`;
   await Deno.writeTextFile(
@@ -516,14 +516,14 @@ Deno.test("loadState migrates deprecated scan checkpoint fields", async (t) => {
       schemaVersion: 1,
       feed: { sealedDates: [], days: {} },
       scan: {
-        starredComplete: true,
-        starredCursor: "cursor-legacy",
-        phase2Queue: ["denoland/deno"],
-        phase2Index: 1,
+        starredPollCursor: "cursor-1",
+        releaseHistoryQueue: ["denoland/deno"],
+        releaseHistoryIndex: 1,
         repos: {
           "denoland/deno": {
-            releaseCursorComplete: true,
-            releaseCursor: "release-cursor-legacy",
+            lastReleaseId: "rel-1",
+            lastPublishedAt: "2026-07-17T10:00:00.000Z",
+            releaseHistoryCursor: "release-cursor-1",
           },
         },
       },
@@ -532,6 +532,36 @@ Deno.test("loadState migrates deprecated scan checkpoint fields", async (t) => {
 
   const state = await loadState(path);
   await t.assertSnapshot(state.scan);
+});
+
+Deno.test("loadState ignores unknown scan fields", async () => {
+  const directory = await Deno.makeTempDir();
+  const path = `${directory}/state.json`;
+  await Deno.writeTextFile(
+    path,
+    JSON.stringify({
+      schemaVersion: 1,
+      feed: { sealedDates: [], days: {} },
+      scan: {
+        starredPollCursor: null,
+        obsoleteField: "drop-me",
+        repos: {
+          "denoland/deno": {
+            lastReleaseId: "rel-1",
+            obsoleteRepoField: true,
+          },
+        },
+      },
+    }),
+  );
+
+  const state = await loadState(path);
+  assertEquals(state.scan.starredPollCursor, null);
+  assertEquals(state.scan.repos["denoland/deno"]?.lastReleaseId, "rel-1");
+  assertEquals(
+    (state.scan as Record<string, unknown>).obsoleteField,
+    undefined,
+  );
 });
 
 Deno.test("state rejects malformed cache data", async () => {

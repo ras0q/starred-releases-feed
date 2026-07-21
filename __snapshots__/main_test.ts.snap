@@ -245,7 +245,7 @@ snapshot[`syncStarredReleases writes atom, html, and state when persisting 1`] =
 }
 `;
 
-snapshot[`loadState migrates deprecated scan checkpoint fields 1`] = `
+snapshot[`loadState reads scan checkpoint fields 1`] = `
 {
   releaseHistoryIndex: 1,
   releaseHistoryQueue: [
@@ -253,9 +253,11 @@ snapshot[`loadState migrates deprecated scan checkpoint fields 1`] = `
   ],
   repos: {
     "denoland/deno": {
-      releaseHistoryCursor: "release-cursor-legacy",
+      lastPublishedAt: "2026-07-17T10:00:00.000Z",
+      lastReleaseId: "rel-1",
+      releaseHistoryCursor: "release-cursor-1",
     },
   },
-  starredPollCursor: "cursor-legacy",
+  starredPollCursor: "cursor-1",
 }
 `;
